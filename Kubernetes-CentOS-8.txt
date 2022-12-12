@@ -1,0 +1,129 @@
+# Install Kubernetes - CentOS
+# CentOS 8.5
+
+# Prerequisite - Install Docker
+
+# Check the Ubuntu release version
+cat /etc/redhat-release
+
+# Switch User to super user
+sudo su
+
+# Update the system
+dnf check-update
+ 
+dnf upgrade -y
+
+
+# Disable SELinux
+setenforce 0
+
+sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
+
+
+
+# Enable the br_netfilter module for cluster communication
+modprobe br_netfilter
+
+echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+
+firewall-cmd --add-masquerade --permanent
+
+firewall-cmd --zone=public --permanent --add-port={6443,2379,2380,10250,10251,10252}/tcp
+
+firewall-cmd --reload
+
+
+
+# Disable Swap
+
+vim /etc/fstab
+# comment out the swap disk if exists
+# /root/swap swap  swap  sw  0   0 
+
+swapoff -a
+
+
+
+# Add Kubernetes repo
+cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF
+
+
+# Install Kubernetes packages
+dnf install -y kubelet kubeadm kubectl
+
+
+# Confirm installation of kubectl
+kubectl version --client && kubeadm version
+
+
+# Check the docker	
+systemctl enable docker
+
+systemctl start docker
+ 
+docker image ls
+
+
+# Enable kubelet service.
+systemctl enable kubelet
+
+systemctl start kubelet
+
+
+# Fix Configuration
+rm /etc/containerd/config.toml
+
+systemctl restart containerd
+
+
+# initialize the cluster – Master Only
+kubeadm init --pod-network-cidr=10.244.0.0/16
+
+
+# Copy the last part of the result — Join command
+# example
+kubeadm join 172.31.38.140:6443 --token l1szj0.67ivaliowwvhsfxr \
+        --discovery-token-ca-cert-hash sha256:8ee2021015d184a015bd2ee2221463a93268eba110e06cec6bc1c6c958ef8b18
+
+# Exit sudo and Set up local kubeconfig – Master Only
+exit
+
+mkdir -p $HOME/.kube
+
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+
+# check the cluster - 1 node - NotReady
+kubectl get nodes
+
+
+
+# Install Flannel networking – Master Only
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+ 
+kubectl get nodes  # until the master node is ready
+
+
+# Join worker nodes to master – Worker node
+exit
+
+sudo kubeadm join ...
+
+
+# Check the cluster State – Master
+kubectl get nodes
+ 
+kubectl get pods --all-namespaces
+ 
+kubectl cluster-info

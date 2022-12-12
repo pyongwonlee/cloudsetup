@@ -1,0 +1,47 @@
+# Install Docker - CentOS
+# CentOS 8.5
+
+
+# Check the Ubuntu release version
+cat /etc/redhat-release
+
+# Switch User to super user
+sudo su
+
+# Update the system
+dnf check-update
+ 
+dnf upgrade -y
+
+
+# Set up the Docker repositories
+dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+   
+dnf repolist
+
+
+# Install Docker packages	
+dnf install docker-ce --nobest --allowerasing -y
+
+
+# Confirm Installation of Docker
+docker version
+
+
+# Use Docker as a non-root user
+usermod -a -G docker <user-name>
+
+exit
+
+# You need to log out and log in again.
+
+
+# Start Docker	
+sudo systemctl enable docker
+ 
+sudo systemctl start docker
+
+systemctl status docker
+
+docker version
+docker image ls
