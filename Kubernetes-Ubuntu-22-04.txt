@@ -4,6 +4,8 @@
 
 
 # Set up the Kubernetes Repositories
+sudo apt-get update
+
 curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes.gpg
  
 echo "deb [signed-by=/etc/apt/keyrings/kubernetes.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
@@ -32,27 +34,50 @@ sudo sysctl --system
 
 
 # Disable Swap
+
+vim /etc/fstab
+# comment out the swap disk if exists
+# /host/ubuntu/disks/swap.disk none            swap    loop,sw
+
 sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
  
 sudo swapoff -a
+
+# reboot 
+sudo reboot
+
+
+
+# Reconnect once the machine is ready again
 
 
 # Confirm installation of kubectl
 kubectl version --client && kubeadm version
 
 
-#Initialize the cluster – Master Only
-	
-#Enable kubelet service. – Master Only
+# Check the docker	
+sudo systemctl enable docker
+
+sudo systemctl start docker
+ 
+docker image ls
+
+
+# Enable kubelet service.
 sudo systemctl enable kubelet
+
 sudo systemctl start kubelet
- 
-# Fix Configuration – Master Only
+
+# Fix Configuration
 sudo rm /etc/containerd/config.toml
+
 sudo systemctl restart containerd
- 
-#Pull container images – Master Only
+
+# Initialize the cluster – Master Only 
+
+# Pull container images – Master Only
 sudo kubeadm config images pull
+
 
 # initialize the cluster – Master Only
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16
@@ -60,8 +85,8 @@ sudo kubeadm init --pod-network-cidr=10.244.0.0/16
 
 # Copy the last part of the result — Join command
 # example
- kubeadm join 172.31.109.93:6443 --token cdh1cj.osirz8aei33v5xw6 \
-         --discovery-token-ca-cert-hash sha256:c28b00cb4839ef52540c1a39b3831f547f729bad9ca9beafd4025aef6b3271f6 
+kubeadm join 172.31.39.164:6443 --token q5jsql.o2usya2aiqgfgrwx \
+        --discovery-token-ca-cert-hash sha256:32aa4e341100249137da4176afce4cf23edd30bb7762ad0ae63eab5c69432c4d
 
 
 # Set up local kubeconfig – Master Only
@@ -90,8 +115,7 @@ sudo rm /etc/containerd/config.toml
 sudo systemctl restart containerd
 
 # run the join command with sudo
-sudo kubeadm join
-
+sudo kubeadm join ...
 
 
 # Check the cluster State – Master
